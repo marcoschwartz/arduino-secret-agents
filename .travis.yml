@@ -8,9 +8,14 @@ before_install:
   - sudo mv arduino-1.6.5 /usr/local/share/arduino
   - sudo ln -s /usr/local/share/arduino/arduino /usr/local/bin/arduino
 install:
-  - arduino --install-library "Adafruit CC3000 Library"
+  - arduino --install-library "SdFat"
 script:
   - arduino --verify --board arduino:avr:uno $PWD/chapter1/simple_alarm_system/simple_alarm_system.ino
+
+  - arduino --verify --board arduino:avr:uno $PWD/chapter2/mic_test/mic_test.ino
+  - arduino --verify --board arduino:avr:uno $PWD/chapter2/recording/recording.ino
+  - arduino --verify --board arduino:avr:uno $PWD/chapter2/sd_test/sd_test.ino
+
 notifications:
   email:
     on_success: change
