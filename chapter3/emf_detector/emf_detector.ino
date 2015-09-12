@@ -2,19 +2,23 @@
 #include <Wire.h> 
 #include <LiquidCrystal_I2C.h>
 
+// Number of readings
 #define NUMREADINGS 15
 
-int senseLimit = 15; // raise this number to decrease sensitivity (up to 1023 max)
-int probePin = 0; // analog 0
-int val = 0; // reading from probePin
+// Parameters for the EMF detector
+int senseLimit = 15;
+int probePin = 0;
+int ledPin = 7;
+int val = 0;
+int threshold = 200;
 
-// variables for smoothing
+// Averaging the measurements
+int readings[NUMREADINGS];                
+int index = 0;                            
+int total = 0;                            
+int average = 0;                          
 
-int readings[NUMREADINGS];                // the readings from the analog input
-int index = 0;                            // the index of the current reading
-int total = 0;                            // the running total
-int average = 0;                          // final average of the probe reading
-
+// Time between readings
 int updateTime = 40;
 
 // Create LCD instance
@@ -25,9 +29,10 @@ void setup()
   // Initialise LCD
   lcd.init();
 
-  Serial.begin(9600);
+  // Set LED as output
+  pinMode(ledPin, OUTPUT);
   
-  // Print a message to the LCD
+  // Print a welcome message to the LCD
   lcd.backlight();
   lcd.setCursor(0,0);
   lcd.print("EMF Detector Started");
@@ -38,23 +43,28 @@ void setup()
 
 void loop()
 {
-  val = analogRead(probePin);  // take a reading from the probe
-  Serial.println(val);
-  
+  // Read from the probe
+  val = analogRead(probePin);
+
+  // Check reading
   if(val >= 1){    
-  val = constrain(val, 1, senseLimit);  // turn any reading higher than the senseLimit value into the senseLimit value
-    val = map(val, 1, senseLimit, 1, 1023);  // remap the constrained value within a 1 to 1023 range
 
-    total -= readings[index];               // subtract the last reading
-    readings[index] = val; // read from the sensor
-    total += readings[index];               // add the reading to the total
-    index = (index + 1);                    // advance to the next index
+    // Constrain & map with sense limit value
+    val = constrain(val, 1, senseLimit);
+    val = map(val, 1, senseLimit, 1, 1023);
 
-    if (index >= NUMREADINGS)               // if we're at the end of the array...
-      index = 0;                            // ...wrap around to the beginning
+    // Averaging the reading
+    total -= readings[index];              
+    readings[index] = val; 
+    total += readings[index];              
+    index = (index + 1);                    
 
-    average = total / NUMREADINGS;          // calculate the average
+    if (index >= NUMREADINGS)              
+      index = 0;                         
 
+    average = total / NUMREADINGS; 
+
+    // Print on LCD screen
     lcd.setCursor(0,1);
     lcd.print("   ");
     
@@ -63,6 +73,15 @@ void loop()
     lcd.setCursor(0,1);
     lcd.print(average);
 
+    // Light up LED if EMF activity detected
+    if (average > threshold) {
+      digitalWrite(ledPin, HIGH);  
+    }
+    else {
+      digitalWrite(ledPin, LOW);  
+    }
+
+    // Wait until next reading
     delay(updateTime);
   }
 }
